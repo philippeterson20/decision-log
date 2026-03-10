@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Decision Log Entry</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --card: #ffffff;
+    --border: #e7e5e4;
+    --text: #1c1917;
+    --muted: #78716c;
+    --accent: #292524;
+    --accent-light: #f5f5f4;
+    --blue: #2563eb;
+    --blue-light: #eff6ff;
+    --red: #dc2626;
+    --red-light: #fef2f2;
+    --green: #16a34a;
+    --green-light: #f0fdf4;
+    --amber: #d97706;
+    --amber-light: #fffbeb;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    padding: 32px 24px;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  .header {
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--accent);
+  }
+  .header h1 {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+  .header .subtitle {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .ticker-row {
+    display: flex;
+    gap: 12px;
+    align-items: end;
+    margin-bottom: 28px;
+  }
+  .ticker-input {
+    flex: 0 0 140px;
+  }
+  .ticker-input input {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    width: 100%;
+    border: none;
+    border-bottom: 2px solid var(--accent);
+    background: transparent;
+    padding: 4px 0;
+    outline: none;
+  }
+  .date-display {
+    font-size: 13px;
+    color: var(--muted);
+    padding-bottom: 8px;
+  }
+  .section {
+    margin-bottom: 28px;
+  }
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  textarea {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.5;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  textarea:focus {
+    border-color: var(--accent);
+  }
+  textarea.constrained {
+    min-height: 60px;
+    max-height: 80px;
+  }
+  .char-count {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: right;
+    margin-top: 4px;
+  }
+  .char-count.over { color: var(--red); font-weight: 600; }
+  /* Action type selector */
+  .action-pills {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .action-pill {
+    padding: 6px 16px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--card);
+  }
+  .action-pill:hover { border-color: var(--accent); }
+  .action-pill.selected { background: var(--accent); color: white; border-color: var(--accent); }
+  /* Predictions */
+  .prediction-row {
+    display: grid;
+    grid-template-columns: 1fr 100px 110px 32px;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .prediction-row input, .prediction-row select {
+    font-family: inherit;
+    font-size: 13px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    outline: none;
+  }
+  .prediction-row input:focus, .prediction-row select:focus {
+    border-color: var(--accent);
+  }
+  .prediction-header {
+    display: grid;
+    grid-template-columns: 1fr 100px 110px 32px;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .add-btn {
+    font-size: 13px;
+    color: var(--blue);
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-weight: 500;
+    padding: 4px 0;
+    margin-top: 4px;
+  }
+  .add-btn:hover { text-decoration: underline; }
+  .remove-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 16px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .remove-btn:hover { background: var(--red-light); color: var(--red); }
+  /* What must be true */
+  .criteria-row {
+    display: grid;
+    grid-template-columns: 1fr 32px;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .criteria-row input {
+    font-family: inherit;
+    font-size: 13px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    outline: none;
+    width: 100%;
+  }
+  .criteria-row input:focus { border-color: var(--accent); }
+  /* Position sizing */
+  .sizing-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .sizing-field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .sizing-field input, .sizing-field select {
+    width: 100%;
+    font-family: inherit;
+    font-size: 14px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    outline: none;
+  }
+  .sizing-field input:focus, .sizing-field select:focus {
+    border-color: var(--accent);
+  }
+  /* Emotional state */
+  .emotion-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .emotion-pill {
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--card);
+  }
+  .emotion-pill:hover { border-color: var(--accent); }
+  .emotion-pill.selected { background: var(--accent); color: white; border-color: var(--accent); }
+  /* Reason codes */
+  .tag-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .tag {
+    padding: 5px 12px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--card);
+  }
+  .tag:hover { border-color: var(--accent); }
+  .tag.selected { background: var(--blue-light); color: var(--blue); border-color: var(--blue); font-weight: 500; }
+  /* Pre-mortem */
+  .premortem-prompt {
+    font-size: 13px;
+    font-style: italic;
+    color: var(--muted);
+    margin-bottom: 8px;
+    line-height: 1.4;
+  }
+  /* Self-contract */
+  .contract-box {
+    background: var(--amber-light);
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .contract-box .contract-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--amber);
+    margin-bottom: 8px;
+  }
+  /* Info edge */
+  .edge-box {
+    background: var(--red-light);
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .edge-box .edge-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--red);
+    margin-bottom: 4px;
+  }
+  .edge-box .edge-subtitle {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  /* Market data placeholder */
+  .market-data {
+    background: var(--accent-light);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .market-data-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+  .market-stat {
+    text-align: center;
+  }
+  .market-stat .stat-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted);
+  }
+  .market-stat .stat-value {
+    font-size: 16px;
+    font-weight: 700;
+    margin-top: 2px;
+  }
+  .market-stat .stat-value.placeholder {
+    color: var(--muted);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 12px;
+  }
+  .cap-iq-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--blue);
+    background: var(--blue-light);
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+  }
+  /* Submit */
+  .submit-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 36px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .submit-btn {
+    padding: 12px 32px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .submit-btn:hover { opacity: 0.85; }
+  .cancel-btn {
+    padding: 12px 24px;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 28px 0;
+  }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Decision Log Entry</h1>
+  <div class="subtitle">Record your thinking before the outcome is known.</div>
+</div>
+<div class="ticker-row">
+  <div class="ticker-input">
+    <input type="text" id="ticker" placeholder="TICKER" maxlength="6">
+  </div>
+  <div class="date-display" id="dateDisplay"></div>
+</div>
+<!-- Market Data (Cap IQ populated) -->
+<div class="section">
+  <div class="section-label">Market Data</div>
+  <div class="market-data">
+    <div class="cap-iq-badge">Cap IQ — auto-populated</div>
+    <div class="market-data-grid">
+      <div class="market-stat">
+        <div class="stat-label">Price</div>
+        <div class="stat-value placeholder">awaiting ticker</div>
+      </div>
+      <div class="market-stat">
+        <div class="stat-label">Mkt Cap</div>
+        <div class="stat-value placeholder">awaiting ticker</div>
+      </div>
+      <div class="market-stat">
+        <div class="stat-label">EV/EBITDA</div>
+        <div class="stat-value placeholder">awaiting ticker</div>
+      </div>
+      <div class="market-stat">
+        <div class="stat-label">FCF Yield</div>
+        <div class="stat-value placeholder">awaiting ticker</div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Action Type -->
+<div class="section">
+  <div class="section-label">Action</div>
+  <div class="action-pills">
+    <div class="action-pill" onclick="selectPill(this, 'action')">New position</div>
+    <div class="action-pill" onclick="selectPill(this, 'action')">Add</div>
+    <div class="action-pill" onclick="selectPill(this, 'action')">Trim</div>
+    <div class="action-pill" onclick="selectPill(this, 'action')">Exit</div>
+    <div class="action-pill" onclick="selectPill(this, 'action')">Pass</div>
+  </div>
+</div>
+<!-- Thesis -->
+<div class="section">
+  <div class="section-label">Thesis — 3 sentences max</div>
+  <textarea class="constrained" id="thesis" placeholder="What's the bet? Why now? What's the variant perception?" oninput="updateCount(this, 'thesisCount', 250)"></textarea>
+  <div class="char-count" id="thesisCount">0 / 250</div>
+</div>
+<!-- What Must Be True -->
+<div class="section">
+  <div class="section-label">What must be true</div>
+  <div class="card">
+    <div id="criteriaList">
+      <div class="criteria-row">
+        <input type="text" placeholder="e.g., Gross margins stay above 35%">
+        <button class="remove-btn" onclick="removeRow(this)">×</button>
+      </div>
+      <div class="criteria-row">
+        <input type="text" placeholder="e.g., Management executes on capital return">
+        <button class="remove-btn" onclick="removeRow(this)">×</button>
+      </div>
+      <div class="criteria-row">
+        <input type="text" placeholder="e.g., No balance sheet deterioration">
+        <button class="remove-btn" onclick="removeRow(this)">×</button>
+      </div>
+    </div>
+    <button class="add-btn" onclick="addCriteria()">+ Add condition</button>
+  </div>
+</div>
+<!-- Sub-Predictions -->
+<div class="section">
+  <div class="section-label">Sub-predictions — falsifiable, time-bound</div>
+  <div class="card">
+    <div class="prediction-header">
+      <span>Prediction</span>
+      <span>Probability</span>
+      <span>Resolves by</span>
+      <span></span>
+    </div>
+    <div id="predictionList">
+      <div class="prediction-row">
+        <input type="text" placeholder="e.g., Revenue exceeds $2B by Q3">
+        <select>
+          <option>50%</option><option>55%</option><option>60%</option>
+          <option>65%</option><option>70%</option><option selected>75%</option>
+          <option>80%</option><option>85%</option><option>90%</option><option>95%</option>
+        </select>
+        <input type="date">
+        <button class="remove-btn" onclick="removeRow(this)">×</button>
+      </div>
+      <div class="prediction-row">
+        <input type="text" placeholder="e.g., Margin expansion of 200bp+ this year">
+        <select>
+          <option>50%</option><option>55%</option><option selected>60%</option>
+          <option>65%</option><option>70%</option><option>75%</option>
+          <option>80%</option><option>85%</option><option>90%</option><option>95%</option>
+        </select>
+        <input type="date">
+        <button class="remove-btn" onclick="removeRow(this)">×</button>
+      </div>
+    </div>
+    <button class="add-btn" onclick="addPrediction()">+ Add prediction</button>
+  </div>
+</div>
+<!-- Position Sizing -->
+<div class="section">
+  <div class="section-label">Position Sizing</div>
+  <div class="card">
+    <div class="sizing-grid">
+      <div class="sizing-field">
+        <label>Target weight</label>
+        <input type="text" placeholder="e.g., 4%">
+      </div>
+      <div class="sizing-field">
+        <label>Max weight</label>
+        <input type="text" placeholder="e.g., 6%">
+      </div>
+      <div class="sizing-field">
+        <label>Downside to permanent impairment</label>
+        <input type="text" placeholder="e.g., -40%">
+      </div>
+      <div class="sizing-field">
+        <label>Correlation note</label>
+        <input type="text" placeholder="e.g., adds to cyclical exposure">
+      </div>
+    </div>
+  </div>
+</div>
+<div class="divider"></div>
+<!-- Information Edge -->
+<div class="section">
+  <div class="edge-box">
+    <div class="edge-title">Information Edge Claim</div>
+    <div class="edge-subtitle">What do you know that the market doesn't? Be specific. This is the field you'll be most embarrassed by in 12 months.</div>
+    <textarea rows="2" placeholder="e.g., The market is pricing in secular decline but misses the new contract pipeline..." style="border: 1px solid #fecaca;"></textarea>
+  </div>
+</div>
+<!-- Pre-Mortem -->
+<div class="section">
+  <div class="section-label">Pre-Mortem</div>
+  <div class="card">
+    <div class="premortem-prompt">It's two years from now. The position has lost 50% of its value. What happened?</div>
+    <textarea rows="3" placeholder="Write the failure narrative..."></textarea>
+  </div>
+</div>
+<!-- Self-Contract -->
+<div class="section">
+  <div class="contract-box">
+    <div class="contract-title">Self-Contract — pre-commitment</div>
+    <textarea rows="3" placeholder="I will reassess this position if any of the following occur:&#10;1. &#10;2. &#10;3. " style="border: 1px solid #fde68a; background: white;"></textarea>
+  </div>
+</div>
+<div class="divider"></div>
+<!-- Emotional State -->
+<div class="section">
+  <div class="section-label">Emotional State — be honest</div>
+  <div class="emotion-grid">
+    <div class="emotion-pill" onclick="selectPill(this, 'emotion')">Convicted</div>
+    <div class="emotion-pill" onclick="selectPill(this, 'emotion')">Cautious</div>
+    <div class="emotion-pill" onclick="selectPill(this, 'emotion')">FOMO</div>
+    <div class="emotion-pill" onclick="selectPill(this, 'emotion')">Contrarian discomfort</div>
+    <div class="emotion-pill" onclick="selectPill(this, 'emotion')">Calm</div>
+    <div class="emotion-pill" onclick="selectPill(this, 'emotion')">Anxious</div>
+    <div class="emotion-pill" onclick="selectPill(this, 'emotion')">Anchored</div>
+  </div>
+</div>
+<!-- Reason Codes -->
+<div class="section">
+  <div class="section-label">Reason Codes — select all that apply</div>
+  <div class="tag-container">
+    <div class="tag" onclick="toggleTag(this)">Mean reversion</div>
+    <div class="tag" onclick="toggleTag(this)">Capital return</div>
+    <div class="tag" onclick="toggleTag(this)">Management change</div>
+    <div class="tag" onclick="toggleTag(this)">Misunderstood earnings</div>
+    <div class="tag" onclick="toggleTag(this)">Cyclical trough</div>
+    <div class="tag" onclick="toggleTag(this)">Asset value</div>
+    <div class="tag" onclick="toggleTag(this)">Compounder</div>
+    <div class="tag" onclick="toggleTag(this)">Special situation</div>
+    <div class="tag" onclick="toggleTag(this)">Regulatory catalyst</div>
+    <div class="tag" onclick="toggleTag(this)">Sector re-rating</div>
+    <div class="tag" onclick="toggleTag(this)">Spin-off / restructuring</div>
+    <div class="tag" onclick="toggleTag(this)">Insider buying</div>
+  </div>
+</div>
+<!-- Confidence -->
+<div class="section">
+  <div class="section-label">Overall Confidence</div>
+  <div class="card" style="display: flex; align-items: center; gap: 16px;">
+    <input type="range" id="confidence" min="0" max="100" value="65" style="flex: 1;" oninput="document.getElementById('confVal').textContent = this.value + '%'">
+    <span id="confVal" style="font-size: 18px; font-weight: 700; min-width: 48px; text-align: right;">65%</span>
+  </div>
+</div>
+<!-- Submit -->
+<div class="submit-row">
+  <button class="submit-btn" onclick="handleSubmit()">Log Decision</button>
+  <button class="cancel-btn">Cancel</button>
+</div>
+<script>
+  // Date display
+  document.getElementById('dateDisplay').textContent = new Date().toLocaleDateString('en-US', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+  });
+  // Pill selection (single select within group)
+  function selectPill(el, group) {
+    const parent = el.parentElement;
+    parent.querySelectorAll('.action-pill, .emotion-pill').forEach(p => p.classList.remove('selected'));
+    el.classList.toggle('selected');
+  }
+  // Tag toggle (multi-select)
+  function toggleTag(el) {
+    el.classList.toggle('selected');
+  }
+  // Char count
+  function updateCount(textarea, countId, max) {
+    const count = textarea.value.length;
+    const el = document.getElementById(countId);
+    el.textContent = count + ' / ' + max;
+    el.className = count > max ? 'char-count over' : 'char-count';
+  }
+  // Add prediction row
+  function addPrediction() {
+    const list = document.getElementById('predictionList');
+    const row = document.createElement('div');
+    row.className = 'prediction-row';
+    row.innerHTML = `
+      <input type="text" placeholder="e.g., New product captures 5% share by 2027">
+      <select>
+        <option>50%</option><option>55%</option><option>60%</option>
+        <option>65%</option><option>70%</option><option selected>75%</option>
+        <option>80%</option><option>85%</option><option>90%</option><option>95%</option>
+      </select>
+      <input type="date">
+      <button class="remove-btn" onclick="removeRow(this)">×</button>
+    `;
+    list.appendChild(row);
+  }
+  // Add criteria row
+  function addCriteria() {
+    const list = document.getElementById('criteriaList');
+    const row = document.createElement('div');
+    row.className = 'criteria-row';
+    row.innerHTML = `
+      <input type="text" placeholder="Another condition that must hold...">
+      <button class="remove-btn" onclick="removeRow(this)">×</button>
+    `;
+    list.appendChild(row);
+  }
+  // Remove row
+  function removeRow(btn) {
+    btn.parentElement.remove();
+  }
+  // Submit handler
+  function handleSubmit() {
+    const data = {
+      ticker: document.getElementById('ticker').value.toUpperCase(),
+      date: new Date().toISOString(),
+      thesis: document.getElementById('thesis').value,
+      confidence: document.getElementById('confidence').value + '%',
+    };
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `decision-${data.ticker || 'draft'}-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+</script>
+</body>
+</html>
